@@ -1,0 +1,7 @@
+@import "tailwindcss";
+
+/* This is what actually makes things dark */
+.dark {
+    background-color: #1a1a1a;
+    color: white;
+}
