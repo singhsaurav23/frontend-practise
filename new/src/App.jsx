@@ -142,6 +142,8 @@ function Loading() {
     return <div className="flex justify-center items-center h-screen">Loading...</div>;
 }
 
+
+
 const App = () => {
    // const [query, setQuery] = useState("");
    // const debouncedValue = useDebounce(query, 5000);
@@ -271,4 +273,133 @@ const App = () => {
 
 
 
-    export default memo(App);
+export default memo(App);
+
+
+const ROWS = 10;
+const COLS = 10;
+
+const Spreadsheet = () => {
+    const [data, setData] = useState(() =>
+        Array.from({ length: ROWS }, () => Array.from({ length: COLS }, () => ''))
+    );
+
+    const [selectedCell, setSelectedCell] = useState({ row: null, col: null });
+
+    // Handle cell value change
+    const handleCellChange = (row, col, value) => {
+        const newData = [...data];
+        newData[row][col] = value;
+        setData(newData);
+    };
+
+    // Handle drag and drop
+    const handleDragStart = (e, row, col) => {
+        e.dataTransfer.setData('text/plain', JSON.stringify({ row, col }));
+    };
+
+    const handleDrop = (e, targetRow, targetCol) => {
+        e.preventDefault();
+        const { row: sourceRow, col: sourceCol } = JSON.parse(e.dataTransfer.getData('text/plain'));
+
+        const newData = [...data];
+        const temp = newData[sourceRow][sourceCol];
+        newData[sourceRow][sourceCol] = newData[targetRow][targetCol];
+        newData[targetRow][targetCol] = temp;
+        setData(newData);
+    };
+
+    // Parse and evaluate formulas
+    const evaluateFormula = (value, row, col) => {
+        if (value.startsWith('=')) {
+            try {
+                const formula = value.slice(1);
+                if (formula.startsWith('SUM')) {
+                    const range = formula.match(/\(([^)]+)\)/)[1];
+                    const [start, end] = range.split(':');
+                    const [startRow, startCol] = start.match(/\d+|\D+/g);
+                    const [endRow, endCol] = end.match(/\d+|\D+/g);
+
+                    let sum = 0;
+                    for (let r = +startRow - 1; r < +endRow; r++) {
+                        for (let c = startCol.charCodeAt(0) - 65; c <= endCol.charCodeAt(0) - 65; c++) {
+                            sum += parseFloat(data[r][c]) || 0;
+                        }
+                    }
+                    return sum;
+                }
+                // Add more formula support here (e.g., AVERAGE, etc.)
+            } catch (e) {
+                return '#ERROR';
+            }
+        }
+        return value;
+    };
+
+    return (
+        <div className="spreadsheet">
+            {data.map((row, rowIndex) => (
+                <div key={rowIndex} className="row">
+                    {row.map((cell, colIndex) => (
+                        <Cell
+                            key={`${rowIndex}-${colIndex}`}
+                            row={rowIndex}
+                            col={colIndex}
+                            value={cell}
+                            selected={selectedCell.row === rowIndex && selectedCell.col === colIndex}
+                            onChange={handleCellChange}
+                            onDragStart={handleDragStart}
+                            onDrop={handleDrop}
+                            evaluateFormula={evaluateFormula}
+                            setSelectedCell={setSelectedCell}
+                        />
+                    ))}
+                </div>
+            ))}
+        </div>
+    );
+};
+
+const Cell = React.memo(({ row, col, value, selected, onChange, onDragStart, onDrop, evaluateFormula, setSelectedCell }) => {
+    const [isEditing, setIsEditing] = useState(false);
+    const [inputValue, setInputValue] = useState(value);
+
+    const handleClick = () => {
+        setIsEditing(true);
+        setSelectedCell({ row, col });
+    };
+
+    const handleBlur = () => {
+        setIsEditing(false);
+        onChange(row, col, inputValue);
+    };
+
+    const handleChange = (e) => {
+        setInputValue(e.target.value);
+    };
+
+    const displayValue = useMemo(() => evaluateFormula(value, row, col), [value, row, col, evaluateFormula]);
+
+    return (
+        <div
+            className={`cell ${selected ? 'selected' : ''}`}
+            onClick={handleClick}
+            draggable
+            onDragStart={(e) => onDragStart(e, row, col)}
+            onDragOver={(e) => e.preventDefault()}
+            onDrop={(e) => onDrop(e, row, col)}
+        >
+            {isEditing ? (
+                <input
+                    type="text"
+                    value={inputValue}
+                    onChange={handleChange}
+                    onBlur={handleBlur}
+                    autoFocus
+                />
+            ) : (
+                displayValue
+            )}
+        </div>
+    );
+});

@@ -5,3 +5,35 @@
     background-color: #1a1a1a;
     color: white;
 }
+
+.spreadsheet {
+    display: flex;
+    flex-direction: column;
+    border: 1px solid #ccc;
+}
+
+.row {
+    display: flex;
+}
+
+.cell {
+    width: 100px;
+    height: 30px;
+    border: 1px solid #ccc;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+}
+
+    .cell.selected {
+        border: 2px solid blue;
+    }
+
+    .cell input {
+        width: 100%;
+        height: 100%;
+        border: none;
+        outline: none;
+        text-align: center;
+    }
