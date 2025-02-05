@@ -102,3 +102,90 @@ const ProductListPage = () => {
 };
 
 export default ProductListPage;
+
+import React from "react";
+import { useFilter } from "../context/FilterContext";
+import ProductItem from "./ProductItem";
+
+const ProductList = () => {
+    const { filteredProducts } = useFilter();
+
+    return (
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {filteredProducts.map((product) => (
+                <ProductItem key={product.id} product={product} />
+            ))}
+        </div>
+    );
+};
+
+export default ProductList;
+
+import React, { useCallback } from "react";
+import { useFilter } from "../context/FilterContext";
+
+const Filters = () => {
+    const { selectedCategory, setSelectedCategory, maxPrice, setMaxPrice, categories } = useFilter();
+
+    // Memoized Handlers
+    const handleCategoryChange = useCallback((e) => setSelectedCategory(e.target.value), []);
+    const handlePriceChange = useCallback((e) => setMaxPrice(Number(e.target.value)), []);
+
+    return (
+        <div className="flex gap-4 mb-4">
+            <select className="border p-2 rounded" value={selectedCategory} onChange={handleCategoryChange}>
+                {categories.map((category) => (
+                    <option key={category} value={category}>{category}</option>
+                ))}
+            </select>
+
+            <input type="range" min="0" max="2000" step="50" value={maxPrice} onChange={handlePriceChange} className="cursor-pointer" />
+            <span className="font-semibold">Max Price: ${maxPrice}</span>
+        </div>
+    );
+};
+
+export default Filters;
+
+import React, { createContext, useContext, useState, useMemo } from "react";
+
+// Product Data
+const products = [
+    { id: 1, name: "iPhone 14", category: "Electronics", price: 999 },
+    { id: 2, name: "MacBook Air", category: "Electronics", price: 1299 },
+    { id: 3, name: "Nike Shoes", category: "Fashion", price: 150 },
+    { id: 4, name: "T-Shirt", category: "Fashion", price: 30 },
+    { id: 5, name: "Samsung TV", category: "Electronics", price: 799 },
+    { id: 6, name: "Adidas Jacket", category: "Fashion", price: 120 },
+];
+
+const categories = ["All", "Electronics", "Fashion"];
+
+// Create Context
+const FilterContext = createContext(null);
+
+// Context Provider
+export const FilterProvider = ({ children }) => {
+    const [selectedCategory, setSelectedCategory] = useState("All");
+    const [maxPrice, setMaxPrice] = useState(1000);
+
+    // Memoized filtered products
+    const filteredProducts = useMemo(() => {
+        return products.filter(
+            (product) =>
+                (selectedCategory === "All" || product.category === selectedCategory) &&
+                product.price <= maxPrice
+        );
+    }, [selectedCategory, maxPrice]);
+
+    return (
+        <FilterContext.Provider value={{ selectedCategory, setSelectedCategory, maxPrice, setMaxPrice, filteredProducts, categories }}>
+            {children}
+        </FilterContext.Provider>
+    );
+};
+
+// Custom Hook for easy access
+export const useFilter = () => {
+    return useContext(FilterContext);
+};
