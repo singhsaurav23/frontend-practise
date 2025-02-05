@@ -216,3 +216,85 @@ const App = () => {
 export default App;
 
 
+
+                import React, { createContext, useContext, useReducer } from "react";
+
+const CartContext = createContext();
+
+const cartReducer = (state, action) => {
+  switch (action.type) {
+    case "ADD":
+      return { items: [...state.items, action.payload], total: state.total + action.payload.price };
+    case "REMOVE":
+      const updatedItems = state.items.filter((item, index) => index !== action.index);
+      return { items: updatedItems, total: state.total - action.payload.price };
+    default:
+      return state;
+  }
+};
+
+const CartProvider = ({ children }) => {
+  const [state, dispatch] = useReducer(cartReducer, { items: [], total: 0 });
+
+  return (
+    <CartContext.Provider value={{ state, dispatch }}>
+      {children}
+    </CartContext.Provider>
+  );
+};
+
+const Product = ({ product }) => {
+  const { dispatch } = useContext(CartContext);
+
+  return (
+    <div className="border p-4">
+      <h2>{product.name}</h2>
+      <p>Price: ${product.price}</p>
+      <button className="bg-green-500 text-white px-4 py-2 mt-2" onClick={() => dispatch({ type: "ADD", payload: product })}>
+        Add to Cart
+      </button>
+    </div>
+  );
+};
+
+const Cart = () => {
+  const { state, dispatch } = useContext(CartContext);
+
+  return (
+    <div className="p-4 border">
+      <h2>Cart</h2>
+      {state.items.map((item, index) => (
+        <div key={index} className="flex justify-between border-b py-2">
+          <span>{item.name} - ${item.price}</span>
+          <button className="text-red-500" onClick={() => dispatch({ type: "REMOVE", index, payload: item })}>
+            Remove
+          </button>
+        </div>
+      ))}
+      <h3 className="mt-4">Total: ${state.total}</h3>
+    </div>
+  );
+};
+
+const App = () => {
+  const products = [
+    { name: "Laptop", price: 1000 },
+    { name: "Phone", price: 500 },
+  ];
+
+  return (
+    <CartProvider>
+      <div className="flex space-x-4 p-4">
+        <div>
+          <h1>Products</h1>
+          {products.map((p, index) => (
+            <Product key={index} product={p} />
+          ))}
+        </div>
+        <Cart />
+      </div>
+    </CartProvider>
+  );
+};
+
+export default App;
